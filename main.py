@@ -24,7 +24,7 @@ surface = pygame.Surface((width, height)) #create a surface for the map
 map = generate_map(tile_size, surface) #generate the map using Perlin noise
 start, goal = start_pt(surface, tile_size, map) #generate the start point on the map surface
 path = a_star(start, goal, map)
-print(start.x, start.y)
+print(path)
 # main loop-keeps the window open and the simulation running
 running = True
 while running:

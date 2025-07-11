@@ -50,7 +50,8 @@ def get_neighbors(current: Node, map):
             if(map[x][y].type ==1):
                 continue
             elif(map[x][y].type ==0):
-                neighbor = Node(nx, ny)  # create a new node for the neighbor using pixel coordinates
+                # do not create a Node(x,y)--> causes recursive node gen
+                neighbor = map[x][y]
                 neighbors.append(neighbor)  # add the neighbor to the list of neighbors
          
          return neighbors
