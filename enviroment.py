@@ -3,9 +3,17 @@ import pygame
 from perlin_noise import PerlinNoise
 
 
+noise = PerlinNoise(octaves=4)
+threshold = -0.095  # threshold for path vs obstacle
+scale = 60
+border = 6 # border size for tiles
+map = [] # to store the generated map
+neon_green = (57, 255, 20) # color for path
+
+
 class Node:
     # cnstructor for the Node class
-    def __init__(self, x, y):
+    def __init__(self, x, y, type=0):
         self.x = x
         self.y = y
         self.g = 0  # cost from start to current node
@@ -14,42 +22,44 @@ class Node:
         # default is null so that when we reach the goal node, we can reconstruct the path by going backwards from the goal node to the start node, start node will have prev as None
         # this way we can stop when we reach the start node
         self.prev = None  # previous node in the path--> as in the node that was used to reach this node
-
+        self.type = type
   
-        def get_neighbors(self):
-            dir = [
-                # so straight up, down, left, and right movements only change x or y by 16 pixels, hence the +16 or -16 depending on the direction(can use a grapg to visualize this)
-                # whereas diagonal movements change both x and y by 16 pixels, hence the +16 or -16 in both x and y for each diagonal direction
-                (0, 16),   # up
-                (0, -16),  # down
-                (16, 0),   # right
-                (-16, 0),  # left
-                (16, 16),   # bottom-right
-                (-16, -16), # top-left
-                (16, -16),  # top-right
-                (-16, 16)   # bottom-left
-            ]
-            neighbors = []
-            for dx, dy in dir:
-                nx, ny = self.x + dx, self.y + dy
-            
+
+
+def get_neighbors(current: Node, map):
+         dir = [
+            # so straight up, down, left, and right movements only change x or y by 16 pixels, hence the +16 or -16 depending on the direction(can use a grapg to visualize this)
+            # whereas diagonal movements change both x and y by 16 pixels, hence the +16 or -16 in both x and y for each diagonal direction
+            (0, 16),   # up
+            (0, -16),  # down
+            (16, 0),   # right
+            (-16, 0),  # left
+            (16, 16),   # bottom-right
+            (-16, -16), # top-left
+            (16, -16),  # top-right
+            (-16, 16)   # bottom-left
+        ]
+         neighbors = []
+         for dx, dy in dir:
+            nx, ny = current.x + dx, current.y + dy  # this is pixel coordinates, wont work for map which is a list whose index would be [0,1,2,3,4] not [o,16,32,48,64]
+            x, y = nx//16, ny//16 # to convert to list index
             # at first did this in the init constructuor itself
             # later realized that if this happened in the constructor:
             # it would create a  neighbors for current node and for each neighbor it would create neighbor nodes again recursively
             # creating infinite recursion
-            neighbor = Node(nx, ny)  # create a new node for the neighbor
-            neighbors.append(neighbor)  # add the neighbor to the list of neighbors
-            return neighbors
+            if(map[x][y].type ==1):
+                continue
+            elif(map[x][y].type ==0):
+                neighbor = Node(nx, ny)  # create a new node for the neighbor using pixel coordinates
+                neighbors.append(neighbor)  # add the neighbor to the list of neighbors
+         
+         return neighbors
 
 
-noise = PerlinNoise(octaves=4)
-threshold = -0.095  # threshold for path vs obstacle
-scale = 60
-border = 6 # border size for tiles
-map = [] # to store the generated map
-neon_green = (57, 255, 20) # color for path
 
 def generate_map(tile_size, surface):
+    global map
+    map = [] # to reset the map each time the func gets called--> so that if we create new map, old one gets deleted
     count = 0
     print(count)
     for x in range(0, surface.get_width(), tile_size):
@@ -57,7 +67,7 @@ def generate_map(tile_size, surface):
         for y in range(0, surface.get_height(), tile_size):
             # generate a map using Perlin noise
             val = noise([x/scale, y/scale])#gives value between -1 and 1
-            row.append(0 if val > threshold else 1) # 0 for path, 1 for obstacl           
+            row.append(Node(x,y,0) if val > threshold else Node(x,y,1)) # 0 for path, 1 for obstacl           
             # map generation based on the threshold so that we can control the number of each type of tiles
             if val > threshold:
 
@@ -67,9 +77,11 @@ def generate_map(tile_size, surface):
                 # magma tile for obstacle at (x,y) of size = tile_sizergb(204,231,232)
                 pygame.draw.rect(surface, (255, 69, 0), (x, y, tile_size-border, tile_size-border))
         map.append(row)
+    return map
+    
   
 
-def start_pt(surface, tile_size): 
+def start_pt(surface, tile_size, map): 
     #generate random start point
     found = False
     nodes = 0
@@ -82,7 +94,7 @@ def start_pt(surface, tile_size):
            #random y coordinate on the row x(map[x])
            y = random.randint(0, len(map[x])-1)
            #check if the tile at (x,y ) is a path(0) or not(1)
-           if (map[x][y]==0):
+           if (map[x][y].type==0):
                # x and y are the coodinates of the map array not literal coordinates of the pixels on screen
                # multiply by tile_size(32) to get the pixel coordinates 
                # 0*32=0, 1*32=32, 2*32=64, etc
@@ -94,13 +106,13 @@ def start_pt(surface, tile_size):
             x = random.randint(0, len(map)-1)
             y = random.randint(0, len(map[x])-1)
             # with the previous check also check whether or not the tile is the start tile
-            if (map[x][y]==0 and x != start_x // tile_size and y != start_y // tile_size):
+            if (map[x][y].type==0 and x != start_x // tile_size and y != start_y // tile_size):
                 pygame.draw.rect(surface, (255, 215, 0), (x * tile_size, y * tile_size, tile_size, tile_size))
                 goal = Node(x * tile_size, y * tile_size) # goal point in pixel coordinates
                 found = True
                 break
     return start, goal
 
-    
+ 
 
 

@@ -1,6 +1,7 @@
 import pygame
 import sys
 from enviroment import generate_map, start_pt
+from pathfinding import a_star
 
 # initialize simulation
 pygame.init()
@@ -20,9 +21,10 @@ surface = pygame.Surface((width, height)) #create a surface for the map
 # made the mistake of calling this inside the main while loop, which caused the map to be generated repeatedly
 # was not visible but when printed the map to console, found that it was contionusly generating multiople maps
 #so moved it outside the main loop to draw the map only once
-generate_map(tile_size, surface) #generate the map using Perlin noise
-start, goal = start_pt(surface, tile_size) #generate the start point on the map surface
-
+map = generate_map(tile_size, surface) #generate the map using Perlin noise
+start, goal = start_pt(surface, tile_size, map) #generate the start point on the map surface
+path = a_star(start, goal, map)
+print(start.x, start.y)
 # main loop-keeps the window open and the simulation running
 running = True
 while running:
