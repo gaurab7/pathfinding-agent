@@ -8,11 +8,11 @@ pygame.init()
 #display setup
 width =1024
 height = 768
-tile_size = 32 #size of each tile in pixels
+tile_size = 16 #size of each tile in pixels
 screen = pygame.display.set_mode((width, height))#resolution-->4:3(1024x768)
 fps = 60
 clock = pygame.time.Clock()
-pygame.display.set_caption("Self-Driving Car Simulation")
+pygame.display.set_caption("Pathfinding Simulation") #title of the window
 
 
 #load the map, start point and goal 
@@ -21,7 +21,7 @@ surface = pygame.Surface((width, height)) #create a surface for the map
 # was not visible but when printed the map to console, found that it was contionusly generating multiople maps
 #so moved it outside the main loop to draw the map only once
 generate_map(tile_size, surface) #generate the map using Perlin noise
-start_pt(surface, tile_size) #generate the start point on the map surface
+start, goal = start_pt(surface, tile_size) #generate the start point on the map surface
 
 # main loop-keeps the window open and the simulation running
 running = True
