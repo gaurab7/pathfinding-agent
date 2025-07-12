@@ -1,2 +1,2 @@
-# self-drive-simulation
-self-driving simulation using pygame 
+# pathfinding-simulation
+simulating pathfinding using a* and dijkstra algorithms
