@@ -22,6 +22,7 @@ surface = pygame.Surface((width, height)) #create a surface for the map
 # made the mistake of calling this inside the main while loop, which caused the map to be generated repeatedly
 # was not visible but when printed the map to console, found that it was contionusly generating multiople maps
 #so moved it outside the main loop to draw the map only once
+mapType='prcdl'
 map = generate_map(tile_size, surface) #generate the map using Perlin noise
 goalSet = False
 startSet = []
@@ -30,6 +31,8 @@ searching = True
 mode = 1
 
 # reset and new map functions
+
+# reset doesnt undo changes made to the map, it just deletes the previous simulation
 def reset(surface, tile_size, map, mode):
     global startSet, goalSet, paths, searching
     
@@ -51,19 +54,6 @@ def reset(surface, tile_size, map, mode):
     
     pygame.display.flip()
 
-def newMap(tile_size):
-    global startSet, goalSet, paths, searching, map, surface
-    startSet = []
-    goalSet = False
-    paths = []
-    searching = True
-    map =[]
-    # Clear and redraw the map surface so it’s fresh
-    surface.fill((0,0,0))
-    map = generate_map(tile_size, surface)
-    screen.blit(surface, (0,0))
-    pygame.display.flip()
-    return map
 
 def dismode(surface, tile_size, map, mode):
     for row in map:
@@ -84,6 +74,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
+        #set goal then start positions-->Mouse left click
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left click
                 pos = pygame.mouse.get_pos()
@@ -96,6 +87,7 @@ while running:
                     if start != None:
                         startSet.append(start)
         
+        # start a star simulation-->SPACE
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 paths = []
@@ -103,48 +95,51 @@ while running:
                     path = a_star(start, goal, map, surface, tile_size)
                     paths.append(path)
         
+        # reset simulation --> r
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                 mode = 1 # reset changes mode back to default
                 reset(surface, tile_size, map, mode)
 
+        # create new procedural map-->n
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_n:
-                mode = 1 # new map shold also be in default mode at first
-                surface.fill((0,0,0))
-                map = generate_map(tile_size, surface)
-                screen.blit(surface, (0,0))
-                pygame.display.flip()
+                # for new map(procedural)
+                print('new map here')
 
-                
+        # switch diplay mode-->m        
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_m:
                 # changing the display mode
                 mode = 0 if mode == 1 else 1 # surprised this works
                 dismode(surface, tile_size, map, mode)
 
+        # switch map mode--> shift+m
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_m and pygame.key.get_mods() & pygame.KMOD_SHIFT:
-                mode = 1 # plain map too in default mode at first
-                surface.fill((0,0,0))
-                map = plainMap(surface, tile_size, mode)
-
+                map = []
+                if mapType == 'prcdl':
+                 mode = 1 # plain map too in default mode at first
+                 surface.fill((0,0,0))
+                 map = plainMap(surface, tile_size, mode)
+                 mapType = 'plain'
+                elif mapType == 'plain':
+                    mode = 1
+                    mapType = 'prcdl'
+                    surface.fill((0,0,0))
+                    map = generate_map(tile_size, surface)
+                    
+        # changing tile type-->right mouse click
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 3: # right click
                 pos = pygame.mouse.get_pos()
                 changeTyoe(map, surface, tile_size, pos, mode)
 
 
-
-
-
-
-
    #fill the screen with black color
     screen.fill((0, 0, 0))
     screen.blit(surface, (0, 0)) #draw the map on the screen
    # start_pt(screen, tile_size) #generate the start point on the map
-
     for path in paths:
         try:
             node = next(path)

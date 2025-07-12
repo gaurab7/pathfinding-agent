@@ -121,15 +121,12 @@ def plainMap(surface, tile_size, mode):
 def changeTyoe(map, surface, tile_size, pos, mode):
     # pos is a tuple with literal pixel coordinates
     x, y = pos 
-    print(x)
     x, y = x//tile_size, y//tile_size # need list indexes for map(list) 0,12,32,64-->0,1,2,3,4..
-    print(x)
     if map[x][y].type == 0:
         map[x][y].type = 1
         pygame.draw.rect(surface, (0,0,0), (x*tile_size, y*tile_size, tile_size, tile_size)) # clearing the tile first--> otherwise border is cyan and not black
         border = 5 
         pygame.draw.rect(surface, obstacles, (x*tile_size, y*tile_size, tile_size-border, tile_size-border)) 
-        print(x*tile_size)
     elif map[x][y].type ==1:
         map[x][y].type = 0
         pygame.draw.rect(surface, (0,0,0), (x*tile_size, y*tile_size, tile_size, tile_size)) # avoids looking weird when changing colors
