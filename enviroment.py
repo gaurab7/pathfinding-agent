@@ -51,6 +51,11 @@ def get_neighbors(current: Node, map):
                 continue
             elif(map[x][y].type ==0):
                 # do not create a Node(x,y)--> causes recursive node gen
+                # and always do these sort of things outside the actual class(caused same problem)
+                # did neighbor = Node(x,y)
+                # what happened is: map already has all the Node objects we need, but this created new Node objects continously 
+                # so same node existed in two mem locs(map and wherever this funciton stored it)
+                # so somehow the pathfindig func gets into an infinite loop
                 neighbor = map[x][y]
                 neighbors.append(neighbor)  # add the neighbor to the list of neighbors
          
@@ -61,8 +66,6 @@ def get_neighbors(current: Node, map):
 def generate_map(tile_size, surface):
     global map
     map = [] # to reset the map each time the func gets called--> so that if we create new map, old one gets deleted
-    count = 0
-    print(count)
     for x in range(0, surface.get_width(), tile_size):
         row = [] # to store the row of tiles
         for y in range(0, surface.get_height(), tile_size):

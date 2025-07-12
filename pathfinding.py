@@ -2,6 +2,10 @@ import math
 from queue import PriorityQueue
 from enviroment import Node , get_neighbors
 import itertools
+import pygame
+
+neon_green = (57, 255, 20)
+magneta = (75, 0, 130)
 
 def distance(current, goal):
     # euclidean distance for 8 directional movement(up, down, left, right, and diagonals)
@@ -12,7 +16,7 @@ def distance(current, goal):
 
 
 
-def a_star(start: Node, goal: Node, map):
+def a_star(start: Node, goal: Node, map, surface, tile_size):
     # using a priority queue to store the nodes to be evaluated
     # the priority queue will store the nodes in order of their f value
     open = PriorityQueue() # nodes to be evaluated
@@ -35,7 +39,6 @@ def a_star(start: Node, goal: Node, map):
         # get the node with least f value from open set
         # this also removes it from the open set
         _, _, current = open.get() # will return the node with least f value cuz used a priority queue with f value as priority
-        print(current.g)
         closed.put((current.f, next(counter), current)) # add the current node to the closed set
         closed_set.add(current)
         # check if the current node is the goal node
@@ -48,7 +51,14 @@ def a_star(start: Node, goal: Node, map):
                 path.append(current) # add each node from goal to start
                 current = current.prev
             
-            return path[::-1] # return path in reverse order as we added it from goal to start
+            # for visualization
+            path = path[::-1] #  path in reverse order as we added it from goal to start
+            for node in path:
+                # yield allows us to iterate over each node one at time instead of returning it all at once
+                yield node
+            # without this return the function keeps exploring even after reaching the goal
+            return
+        
 
         for neighbor in get_neighbors(current, map):
             if neighbor.type == 1:
@@ -79,6 +89,11 @@ def a_star(start: Node, goal: Node, map):
                     # this duplicates the neighbor in open set, but its not a probelm cuz we have a conditon above that checks if node is in closed set
                     # as the new duplicate will have a better g value and will be evaluated first(get returns it first as it has a lower f value)
                     # then it gets added to the closed set and  if later old duplicate is evaluated, it will be skipped as it is already in the closed set
+                    
+                    if (neighbor.x, neighbor.y) not in [(start.x, start.y), (goal.x, goal.y)]: 
+                       pygame.draw.rect(surface, (75, 0, 130), (neighbor.x, neighbor.y, tile_size,tile_size))
+                    pygame.display.update()
+                    yield None # pausing after each node
                 elif g > neighbor.g:
                     # this path is worse as the cost will be higher, so we skip it
                     continue
@@ -86,11 +101,19 @@ def a_star(start: Node, goal: Node, map):
         # if we reach here, it means we have evaluated all the nodes and did not find the goal node
         # so we return an empty path
 
-    return []
+    yield []
         # if we found the goal node, we can reconstruct the path from the goal node to      
 
 
-    
+def draw_path(surface, path, tile_size, start, goal):
+    for node in path:
+        if (node.x, node.y) == (start.x, start.y):
+            break
+        elif (node.x, node.y) == (goal.x, goal.y):
+            continue
+        else:
+            pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
+            pygame.display.update()
 
 
 
