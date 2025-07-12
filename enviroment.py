@@ -6,9 +6,10 @@ from perlin_noise import PerlinNoise
 noise = PerlinNoise(octaves=4)
 threshold = -0.095  # threshold for path vs obstacle
 scale = 60
-border = 6 # border size for tiles
 map = [] # to store the generated map
 neon_green = (57, 255, 20) # color for path
+nodes = (0,100,100)
+obstacles = (255, 69, 0)
 
 
 class Node:
@@ -24,8 +25,6 @@ class Node:
         self.prev = None  # previous node in the path--> as in the node that was used to reach this node
         self.type = type
   
-
-
 def get_neighbors(current: Node, map):
          dir = [
             # so straight up, down, left, and right movements only change x or y by 16 pixels, hence the +16 or -16 depending on the direction(can use a grapg to visualize this)
@@ -47,21 +46,22 @@ def get_neighbors(current: Node, map):
             # later realized that if this happened in the constructor:
             # it would create a  neighbors for current node and for each neighbor it would create neighbor nodes again recursively
             # creating infinite recursion
-            if(map[x][y].type ==1):
-                continue
-            elif(map[x][y].type ==0):
-                # do not create a Node(x,y)--> causes recursive node gen
-                # and always do these sort of things outside the actual class(caused same problem)
-                # did neighbor = Node(x,y)
-                # what happened is: map already has all the Node objects we need, but this created new Node objects continously 
-                # so same node existed in two mem locs(map and wherever this funciton stored it)
-                # so somehow the pathfindig func gets into an infinite loop
-                neighbor = map[x][y]
-                neighbors.append(neighbor)  # add the neighbor to the list of neighbors
+
+            # say at the left edge when trying to find neighbors, u cant move further left but without bound check this function tries to go further left(no where to go)--> out of range error
+            if (0 <= x < len(map) and 0 <= y < len(map[x])): # bound check--> without this nodes at edge cause out of range index shit
+              if(map[x][y].type ==1):
+                 continue
+              elif(map[x][y].type ==0):# say leftmost node is node[0][0] without bound check-->map[x][y] tries to search map[-16][0], map[-16][-16],.... which dont exist 
+                 # do not create a Node(x,y)--> causes recursive node gen
+                 # and always do these sort of things outside the actual class(caused same problem)
+                 # did neighbor = Node(x,y)
+                 # what happened is: map already has all the Node objects we need, but this created new Node objects continously 
+                 # so same node existed in two mem locs(map and wherever this funciton stored it)
+                 # so somehow the pathfindig func gets into an infinite loop
+                 neighbor = map[x][y]
+                 neighbors.append(neighbor)  # add the neighbor to the list of neighbors
          
          return neighbors
-
-
 
 def generate_map(tile_size, surface):
     global map
@@ -76,47 +76,67 @@ def generate_map(tile_size, surface):
             if val > threshold:
 
                 # cyan tlie for path at (x,y) of size = tile_size
-                pygame.draw.rect(surface, (0, 100, 100), (x, y, tile_size-3, tile_size-3))
+                pygame.draw.rect(surface, nodes, (x, y, tile_size, tile_size))
             else:
                 # magma tile for obstacle at (x,y) of size = tile_sizergb(204,231,232)
-                pygame.draw.rect(surface, (255, 69, 0), (x, y, tile_size-border, tile_size-border))
+                pygame.draw.rect(surface, obstacles, (x, y, tile_size-5, tile_size-5))
         map.append(row)
     return map
     
-  
+def setGoal(surface, tile_size, map, pos):
+    x, y = pos
+    x, y = x//tile_size, y//tile_size
+    if(map[x][y].type == 0): # goal or start can only be walkable nodes
+         pygame.draw.rect(surface, (255, 215, 0), (x * tile_size, y * tile_size, tile_size, tile_size))
+         goal = Node(x * tile_size, y * tile_size) # goal point in pixel coordinates
+         return goal
+    
+    else: 
+        return None
 
-def start_pt(surface, tile_size, map): 
-    #generate random start point
-    found = False
-    nodes = 0
-    start_x = 0
-    start_y = 0 
-    while not found:
-        if nodes == 0:
-           #random x coordinate on the map
-           x = random.randint(0, len(map)-1)
-           #random y coordinate on the row x(map[x])
-           y = random.randint(0, len(map[x])-1)
-           #check if the tile at (x,y ) is a path(0) or not(1)
-           if (map[x][y].type==0):
-               # x and y are the coodinates of the map array not literal coordinates of the pixels on screen
-               # multiply by tile_size(32) to get the pixel coordinates 
-               # 0*32=0, 1*32=32, 2*32=64, etc
-               #gives (0,0), (32,0), (64,0), etc which are the pixel coordinates of the tile
-               pygame.draw.rect(surface, (0, 0, 0), (x * tile_size, y * tile_size, tile_size, tile_size))
-               start = Node(x * tile_size, y * tile_size) # start point in pixel coordinates
-               nodes += 1
-        else:
-            x = random.randint(0, len(map)-1)
-            y = random.randint(0, len(map[x])-1)
-            # with the previous check also check whether or not the tile is the start tile
-            if (map[x][y].type==0 and x != start_x // tile_size and y != start_y // tile_size):
-                pygame.draw.rect(surface, (255, 215, 0), (x * tile_size, y * tile_size, tile_size, tile_size))
-                goal = Node(x * tile_size, y * tile_size) # goal point in pixel coordinates
-                found = True
-                break
-    return start, goal
+def setStart(surface, tile_size, map, pos, goal):
+    x, y = pos
+    x, y = x//tile_size, y//tile_size # to get map indexes 
+    if (map[x][y].type == 0) and (x, y != goal.x//tile_size, goal.y//tile_size): # goal or start can only be walkable nodes
+        pygame.draw.rect(surface, (255, 250, 250), (x * tile_size, y * tile_size, tile_size, tile_size))
+        start = Node(x * tile_size, y * tile_size)
+        return start
+    else:
+        return None
 
- 
+def plainMap(surface, tile_size, mode):
+    global map
+    map = [] # to reset the map each time the func gets called--> so that if we create new map, old one gets deleted
+    for x in range(0, surface.get_width(), tile_size):
+        row = [] # to store the row of tiles
+        for y in range(0, surface.get_height(), tile_size):
+            row.append(Node(x,y,0))           
+            # cyan tlie for path at (x,y) of size = tile_size
+            border = 0 if mode == 1 else 3
+            pygame.draw.rect(surface, nodes, (x, y, tile_size-border, tile_size-border))
+         
+        map.append(row)
+    return map
+
+def changeTyoe(map, surface, tile_size, pos, mode):
+    # pos is a tuple with literal pixel coordinates
+    x, y = pos 
+    print(x)
+    x, y = x//tile_size, y//tile_size # need list indexes for map(list) 0,12,32,64-->0,1,2,3,4..
+    print(x)
+    if map[x][y].type == 0:
+        map[x][y].type = 1
+        pygame.draw.rect(surface, (0,0,0), (x*tile_size, y*tile_size, tile_size, tile_size)) # clearing the tile first--> otherwise border is cyan and not black
+        border = 5 
+        pygame.draw.rect(surface, obstacles, (x*tile_size, y*tile_size, tile_size-border, tile_size-border)) 
+        print(x*tile_size)
+    elif map[x][y].type ==1:
+        map[x][y].type = 0
+        pygame.draw.rect(surface, (0,0,0), (x*tile_size, y*tile_size, tile_size, tile_size)) # avoids looking weird when changing colors
+        border = 0 if mode == 1 else 3
+        pygame.draw.rect(surface, nodes, (x*tile_size, y*tile_size, tile_size-border, tile_size-border)) 
 
 
+
+
+    
