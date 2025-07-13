@@ -1,7 +1,7 @@
 import pygame
 import sys
 from enviroment import generate_map, plainMap, changeTyoe, setGoal, setStart, Node
-from pathfinding import a_star, draw_path
+from pathfinding import a_star
 
 # initialize simulation
 pygame.init()
@@ -15,6 +15,9 @@ fps = 60
 clock = pygame.time.Clock()
 pygame.display.set_caption("Pathfinding Simulation") #title of the window
 neon_green = (57, 255, 20)
+grass = (107,142,37)
+obstacles = (255, 69, 0)
+muddy = (101, 67, 33)
 
 
 #load the map, start point and goal 
@@ -45,11 +48,13 @@ def reset(surface, tile_size, map, mode):
     for row in map:
         for node in row:
             pygame.draw.rect(surface, (0, 0, 0), (node.x, node.y, tile_size, tile_size))  # clear tile
-            color = (0, 100, 100) if node.type == 0 else (255, 69, 0)
+            if node.type == 0: color = grass
+            elif node.type == 2: color = muddy
+            else: color = obstacles
             if mode==0:
-              border = 3 if node.type == 0 else 5
+              border = 3 if node.type == 0 or node.type == 2 else 5
             else:
-              border = 0 if node.type == 0 else 5
+              border = 0 if node.type == 0 or node.type == 2 else 5
             pygame.draw.rect(surface, color, (node.x, node.y, tile_size - border, tile_size - border))
     
     pygame.display.flip()
@@ -59,7 +64,9 @@ def dismode(surface, tile_size, map, mode):
     for row in map:
         for node in row:
             pygame.draw.rect(surface, (0, 0, 0), (node.x, node.y, tile_size, tile_size))  # clear tile
-            color = (0, 100, 100) if node.type == 0 else (255, 69, 0)
+            if node.type == 0: color = grass
+            elif node.type == 2: color = muddy
+            else: color = obstacles
             if mode==0:
               border = 3 if node.type == 0 else 5 
             else:
