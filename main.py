@@ -16,7 +16,7 @@ clock = pygame.time.Clock()
 pygame.display.set_caption("Pathfinding Simulation") #title of the window
 neon_green = (57, 255, 20)
 grass = (107,142,37)
-obstacles = (255, 69, 0)
+obstacles = (255, 0, 0)
 muddy = (101, 67, 33)
 
 
@@ -30,9 +30,8 @@ map = generate_map(tile_size, surface) #generate the map using Perlin noise
 goalSet = False
 startSet = []
 paths = [] # yields all the nodes in the path so tha we can iterate over them one at a time
-searching = True
+searching = False
 mode = 1
-
 # reset and new map functions
 
 # reset doesnt undo changes made to the map, it just deletes the previous simulation
@@ -42,7 +41,7 @@ def reset(surface, tile_size, map, mode):
     startSet = []
     goalSet = False
     paths = []
-    searching = True
+    searching = False
     
     # Redraw the existing map from the stored Node types
     for row in map:
@@ -73,6 +72,24 @@ def dismode(surface, tile_size, map, mode):
               border = 0 if node.type == 0 else 5
             pygame.draw.rect(surface, color, (node.x, node.y, tile_size - border, tile_size - border))
 
+def drawPath():
+    global paths, searching
+
+    allDone=False
+    for i, (path, done) in enumerate(paths):
+        if not done:
+            try:
+                node = next(path)
+                if isinstance(node, Node) and (node.x, node.y) not in [(startSet[i].x, startSet[i].y), (goal.x, goal.y)]:
+                    pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
+                allDone = False
+
+            except StopIteration:
+                paths[i] = (path, True)  # Mark this path as done
+
+
+
+
 
 # main loop-keeps the window open and the simulation running
 running = True
@@ -93,6 +110,7 @@ while running:
                     start = setStart(surface, tile_size, map, pos, goal)
                     if start != None:
                         startSet.append(start)
+
         
         # start a star simulation-->SPACE
         if event.type == pygame.KEYDOWN:
@@ -100,7 +118,9 @@ while running:
                 paths = []
                 for start in startSet:
                     path = a_star(start, goal, map, surface, tile_size)
-                    paths.append(path)
+                    paths.append((path, False))
+
+             
         
         # reset simulation --> r
         if event.type == pygame.KEYDOWN:
@@ -147,16 +167,9 @@ while running:
     screen.fill((0, 0, 0))
     screen.blit(surface, (0, 0)) #draw the map on the screen
    # start_pt(screen, tile_size) #generate the start point on the map
-    for path in paths:
-        try:
-            node = next(path)
-            if isinstance(node, Node):  # path is found
-                if (node.x, node.y) not in [(start.x, start.y), (goal.x, goal.y)]:
-                    pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
-                    pygame.display.update()
-                    
-        except StopIteration:
-            searching = False
+    if any(not done for _, done in paths):
+      drawPath()
+    
     # update the display
     pygame.display.flip()
     clock.tick(fps) #60 frames per second

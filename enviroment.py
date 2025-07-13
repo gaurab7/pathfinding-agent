@@ -9,7 +9,7 @@ scale = 60
 map = [] # to store the generated map
 neon_green = (57, 255, 20) # color for path
 grass = (107,142,37)
-obstacles = (255, 69, 0)
+obstacles = (220, 0, 0)
 muddy = (101, 67, 33)
 pen = 50
 
