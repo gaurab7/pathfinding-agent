@@ -27,21 +27,23 @@ surface = pygame.Surface((width, height)) #create a surface for the map
 #so moved it outside the main loop to draw the map only once
 mapType='prcdl'
 map = generate_map(tile_size, surface) #generate the map using Perlin noise
-goalSet = False
-startSet = []
-paths = [] # yields all the nodes in the path so tha we can iterate over them one at a time
-searching = False
+startSet = False
+goalSet =  False
+searching = True
+prev = None
+changeMade = False
 mode = 1
 # reset and new map functions
 
 # reset doesnt undo changes made to the map, it just deletes the previous simulation
 def reset(surface, tile_size, map, mode):
-    global startSet, goalSet, paths, searching
+    global startSet, goalSet, searching, prev
+
+    prev = None
     
-    startSet = []
+    startSet = False
     goalSet = False
-    paths = []
-    searching = False
+    searching = True
     
     # Redraw the existing map from the stored Node types
     for row in map:
@@ -73,19 +75,13 @@ def dismode(surface, tile_size, map, mode):
             pygame.draw.rect(surface, color, (node.x, node.y, tile_size - border, tile_size - border))
 
 def drawPath():
-    global paths, searching
-
-    allDone=False
-    for i, (path, done) in enumerate(paths):
-        if not done:
-            try:
-                node = next(path)
-                if isinstance(node, Node) and (node.x, node.y) not in [(startSet[i].x, startSet[i].y), (goal.x, goal.y)]:
-                    pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
-                allDone = False
-
-            except StopIteration:
-                paths[i] = (path, True)  # Mark this path as done
+    global searching, path
+    try:
+        node = next(path)
+        if isinstance(node, Node) and (node.x, node.y) not in [(start.x, start.y), (goal.x, goal.y)]:
+         pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
+    except StopIteration:
+            searching = True
 
 
 
@@ -102,23 +98,34 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left click
                 pos = pygame.mouse.get_pos()
-                if not goalSet:
-                    goal = setGoal(surface, tile_size, map, pos)
+                if not startSet:
+                    start = setStart(surface, tile_size, map, pos)
+                    if start != None:
+                        startSet = True
+                elif not goalSet  and prev == None:
+                    goal = setGoal(surface, tile_size, map, pos, start)
+                    prev = goal
                     if goal != None:
                         goalSet = True
-                else:
-                    start = setStart(surface, tile_size, map, pos, goal)
-                    if start != None:
-                        startSet.append(start)
+                elif goalSet and prev != None:
+                    color = grass if prev.type==0 else muddy
+                    pygame.draw.rect(surface, color, (prev.x, prev.y, tile_size, tile_size))
+                    goal = setGoal(surface, tile_size, map, pos, start)
+                    prev = goal
+                    path = a_star(start, goal, map, surface, tile_size)
+                    searching=False
+                    
+                    
 
         
         # start a star simulation-->SPACE
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                paths = []
-                for start in startSet:
-                    path = a_star(start, goal, map, surface, tile_size)
-                    paths.append((path, False))
+                path = a_star(start, goal, map, surface, tile_size)
+                searching=False
+
+        
+                
 
              
         
@@ -161,14 +168,18 @@ while running:
             if event.button == 3: # right click
                 pos = pygame.mouse.get_pos()
                 changeTyoe(map, surface, tile_size, pos, mode)
+                if searching == False:
+                     path = a_star(start, goal, map, surface, tile_size)
 
 
    #fill the screen with black color
     screen.fill((0, 0, 0))
     screen.blit(surface, (0, 0)) #draw the map on the screen
+    
    # start_pt(screen, tile_size) #generate the start point on the map
-    if any(not done for _, done in paths):
-      drawPath()
+    if not searching:
+         drawPath()
+          
     
     # update the display
     pygame.display.flip()

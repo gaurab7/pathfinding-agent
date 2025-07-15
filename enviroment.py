@@ -95,10 +95,10 @@ def generate_map(tile_size, surface):
         map.append(row)
     return map
     
-def setGoal(surface, tile_size, map, pos):
+def setGoal(surface, tile_size, map, pos,start):
     x, y = pos
     x, y = x//tile_size, y//tile_size
-    if(map[x][y].type == 0 or map[x][y]==2): # goal or start can only be walkable nodes
+    if(map[x][y].type == 0 or map[x][y]==2)  and (x, y != start.x//tile_size, start.y//tile_size): # goal or start can only be walkable nodes
          pygame.draw.rect(surface, (255, 215, 0), (x * tile_size, y * tile_size, tile_size, tile_size))
          goal = Node(x * tile_size, y * tile_size) # goal point in pixel coordinates
          return goal
@@ -106,10 +106,10 @@ def setGoal(surface, tile_size, map, pos):
     else: 
         return None
 
-def setStart(surface, tile_size, map, pos, goal):
+def setStart(surface, tile_size, map, pos):
     x, y = pos
     x, y = x//tile_size, y//tile_size # to get map indexes 
-    if (map[x][y].type == 0 or map[x][y]==2) and (x, y != goal.x//tile_size, goal.y//tile_size): # goal or start can only be walkable nodes
+    if (map[x][y].type == 0 or map[x][y]==2): # goal or start can only be walkable nodes
         pygame.draw.rect(surface, (255, 250, 250), (x * tile_size, y * tile_size, tile_size, tile_size))
         start = Node(x * tile_size, y * tile_size)
         return start
