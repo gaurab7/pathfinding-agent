@@ -2,6 +2,7 @@ import pygame
 import sys
 from enviroment import generate_map, plainMap, changeTyoe, setGoal, setStart, Node
 from pathfinding import a_star
+from seeker import Seeker, genSeeker
 
 # initialize simulation
 pygame.init()
@@ -16,7 +17,7 @@ clock = pygame.time.Clock()
 pygame.display.set_caption("Pathfinding Simulation") #title of the window
 neon_green = (57, 255, 20)
 grass = (107,142,37)
-obstacles = (255, 0, 0)
+obstacles = (125, 125, 125)
 muddy = (101, 67, 33)
 
 
@@ -30,6 +31,7 @@ map = generate_map(tile_size, surface) #generate the map using Perlin noise
 startSet = False
 goalSet =  False
 searching = True
+move = False
 prev = None
 changeMade = False
 mode = 1
@@ -75,13 +77,15 @@ def dismode(surface, tile_size, map, mode):
             pygame.draw.rect(surface, color, (node.x, node.y, tile_size - border, tile_size - border))
 
 def drawPath():
-    global searching, path
+    global searching, path, move
     try:
         node = next(path)
         if isinstance(node, Node) and (node.x, node.y) not in [(start.x, start.y), (goal.x, goal.y)]:
          pygame.draw.rect(surface, neon_green, (node.x, node.y, tile_size, tile_size))
     except StopIteration:
             searching = True
+            move = True
+            
 
 
 
@@ -122,6 +126,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 path = a_star(start, goal, map, surface, tile_size)
+                seeker = genSeeker(start, surface, tile_size, goal)
                 searching=False
 
         
@@ -134,12 +139,6 @@ while running:
             if event.key == pygame.K_r:
                 mode = 1 # reset changes mode back to default
                 reset(surface, tile_size, map, mode)
-
-        # create new procedural map-->n
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_n:
-                # for new map(procedural)
-                print('new map here')
 
         # switch diplay mode-->m        
         if event.type == pygame.KEYDOWN:
@@ -179,6 +178,8 @@ while running:
    # start_pt(screen, tile_size) #generate the start point on the map
     if not searching:
          drawPath()
+
+    
           
     
     # update the display
