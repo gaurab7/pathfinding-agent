@@ -1,8 +1,7 @@
 import pygame
 import sys
 from enviroment import generate_map, plainMap, changeTyoe, setGoal, setStart, Node
-from pathfinding import a_star
-from seeker import Seeker, genSeeker
+from pathfinding import a_star, dijkstra
 
 # initialize simulation
 pygame.init()
@@ -35,17 +34,19 @@ move = False
 prev = None
 changeMade = False
 mode = 1
+method = None # 0 for astar 1 for dijkstra
 # reset and new map functions
 
 # reset doesnt undo changes made to the map, it just deletes the previous simulation
 def reset(surface, tile_size, map, mode):
-    global startSet, goalSet, searching, prev
+    global startSet, goalSet, searching, prev, method
 
     prev = None
     
     startSet = False
     goalSet = False
     searching = True
+    method = None
     
     # Redraw the existing map from the stored Node types
     for row in map:
@@ -86,8 +87,23 @@ def drawPath():
             searching = True
             move = True
             
-
-
+# for reseting tile colors only
+def softR(surface, tile_size, map, mode):
+    
+    # Redraw the existing map from the stored Node types
+    for row in map:
+        for node in row:
+            pygame.draw.rect(surface, (0, 0, 0), (node.x, node.y, tile_size, tile_size))  # clear tile
+            if node.type == 0: color = grass
+            elif node.type == 2: color = muddy
+            else: color = obstacles
+            if mode==0:
+              border = 3 if node.type == 0 or node.type == 2 else 5
+            else:
+              border = 0 if node.type == 0 or node.type == 2 else 5
+            pygame.draw.rect(surface, color, (node.x, node.y, tile_size - border, tile_size - border))
+    
+    pygame.display.flip()
 
 
 
@@ -112,11 +128,16 @@ while running:
                     if goal != None:
                         goalSet = True
                 elif goalSet and prev != None:
+                    softR(surface,tile_size,map,mode)
+                    pygame.draw.rect(surface, (250,250,250), (start.x, start.y, tile_size,tile_size))
                     color = grass if prev.type==0 else muddy
                     pygame.draw.rect(surface, color, (prev.x, prev.y, tile_size, tile_size))
                     goal = setGoal(surface, tile_size, map, pos, start)
                     prev = goal
-                    path = a_star(start, goal, map, surface, tile_size)
+                    if method == 0:
+                      path = a_star(start, goal, map, surface, tile_size)
+                    else:
+                        path = dijkstra(surface, tile_size, map, start, goal)
                     searching=False
                     
                     
@@ -126,10 +147,17 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 path = a_star(start, goal, map, surface, tile_size)
-                seeker = genSeeker(start, surface, tile_size, goal)
                 searching=False
+                method = 0
 
-        
+         # start a star simulation-->D
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_d:
+                path = dijkstra( surface, tile_size, map, start, goal)
+                searching=False
+                method = 1
+
+ 
                 
 
              
@@ -167,8 +195,14 @@ while running:
             if event.button == 3: # right click
                 pos = pygame.mouse.get_pos()
                 changeTyoe(map, surface, tile_size, pos, mode)
+                softR(surface, tile_size,map, mode)
+                pygame.draw.rect(surface, (250,250,250), (start.x, start.y, tile_size,tile_size))
+                pygame.draw.rect(surface, (255,215,0), (goal.x, goal.y, tile_size,tile_size))
                 if searching == False:
-                     path = a_star(start, goal, map, surface, tile_size)
+                     if method == 0:
+                       path = a_star(start, goal, map, surface, tile_size)
+                     else:
+                       path = dijkstra(surface, tile_size, map, start, goal)
 
 
    #fill the screen with black color

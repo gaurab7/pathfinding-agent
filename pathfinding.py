@@ -6,6 +6,8 @@ import pygame
 
 neon_green = (57, 255, 20)
 magneta = 	(129, 0, 120)
+teal = (255, 140, 0)
+saddle = (183, 65, 14) 
 dark = (68, 0, 68)
 
 def distance(current, goal):
@@ -108,7 +110,53 @@ def a_star(start: Node, goal: Node, map, surface, tile_size):
 
 
 
+def dijkstra(surface, tile_size, map, start: Node, goal: Node):
+    nodeSet = []
+    nodeQ = PriorityQueue()
+    counter = itertools.count()
+
+    #source/start
+    start.g = 0
+    start.h = 0
+    start.f = start.g
+    nodeQ.put((start.f, next(counter), start))
+    nodeSet.append(start)
+    
+    while not nodeQ.empty():
+        f, _, current = nodeQ.get()
+
+        if current.x == goal.x and current.y == goal.y:
+            path=[]
+            while current.prev is not None:
+                path.append(current) # add each node from goal to start
+                current = current.prev
+            path = path[::-1] #  path in reverse order as we added it from goal to start
+            for node in path:
+                # yield allows us to iterate over each node one at time instead of returning it all at once
+                yield node
+            # without this return the function keeps exploring even after reaching the goal
+            return
 
 
+        for neighbor in get_neighbors(current, map):
+            if neighbor.type == 1:
+                continue
+            elif neighbor.type ==0 or neighbor.type ==2:
+                g = current.g + neighbor.penalty + (22 if (neighbor.x != current.x and neighbor.y != current.y) else 16)
+                if not neighbor in nodeSet or g < neighbor.g:
+                    neighbor.g = g 
+                    neighbor.f = neighbor.g 
+                    neighbor.prev = current # set the previous node for this path to the current node
+                    nodeQ.put((neighbor.f, next(counter), neighbor)) 
+                    nodeSet.append(neighbor)         
+                    if (neighbor.x, neighbor.y) not in [(start.x, start.y), (goal.x, goal.y)]: 
+                       color = teal if neighbor.type == 0 else saddle # a darker shade to show the different type of explored nodes
+                       pygame.draw.rect(surface, color, (neighbor.x, neighbor.y, tile_size,tile_size))
+                    pygame.display.update()
+                    yield None 
+                elif g > neighbor.g:
+                    continue
+
+    yield[]
 
 
